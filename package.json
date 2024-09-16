@@ -1,0 +1,28 @@
+{
+  "name": "abslink",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "IPC for abstract message channels, comlink style.",
+  "main": "dist/umd/abslink.js",
+  "module": "dist/esm/abslink.mjs",
+  "types": "dist/umd/abslink.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ThaUnknown/abslink.git"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@rollup/plugin-terser": "0.4.4",
+    "@rollup/plugin-typescript": "11.1.6",
+    "@types/node": "^22.5.5",
+    "rimraf": "^6.0.1",
+    "rollup": "4.21.3",
+    "tslib": "^2.7.0",
+    "tsx": "^4.19.1",
+    "typescript": "5.6.2"
+  }
+}

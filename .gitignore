@@ -1,0 +1,8 @@
+*.pem
+*.swp
+node_modules
+*.bak
+dist
+.*_cache*
+package-lock.json
+test.ts
