@@ -7,14 +7,14 @@ import {
 } from "./types"
 export type { Endpoint }
 
-export const proxyMarker = Symbol("Comlink.proxy")
-export const releaseProxy = Symbol("Comlink.releaseProxy")
-export const finalizer = Symbol("Comlink.finalizer")
+export const proxyMarker = Symbol("Abslink.proxy")
+export const releaseProxy = Symbol("Abslink.releaseProxy")
+export const finalizer = Symbol("Abslink.finalizer")
 
-const throwMarker = Symbol("Comlink.thrown")
+const throwMarker = Symbol("Abslink.thrown")
 
 /**
- * Interface of values that were marked to be proxied with `comlink.proxy()`.
+ * Interface of values that were marked to be proxied with `abslink.proxy()`.
  * Can also be implemented by classes.
  */
 export interface ProxyMarked {
@@ -43,7 +43,7 @@ type Unpromisify<P> = P extends Promise<infer T> ? T : P
  * See https://www.typescriptlang.org/docs/handbook/advanced-types.html#distributive-conditional-types
  */
 type RemoteProperty<T> =
-  // If the value is a method, comlink will proxy it automatically.
+  // If the value is a method, abslink will proxy it automatically.
   // Objects are only proxied if they are marked to be proxied.
   // Otherwise, the property is converted to a Promise that resolves the cloned value.
   T extends Function | ProxyMarked ? Remote<T> : Promisify<T>
@@ -74,7 +74,7 @@ export type UnproxyOrClone<T> = T extends RemoteObject<ProxyMarked>
 
 /**
  * Takes the raw type of a remote object in the other thread and returns the type as it is visible to the local thread
- * when proxied with `Comlink.proxy()`.
+ * when proxied with `Abslink.proxy()`.
  *
  * This does not handle call signatures, which is handled by the more general `Remote<T>` type.
  *
@@ -94,7 +94,7 @@ export type RemoteObject<T> = { [P in keyof T]: RemoteProperty<T[P]> }
 export type LocalObject<T> = { [P in keyof T]: LocalProperty<T[P]> }
 
 /**
- * Additional special comlink methods available on each proxy returned by `Comlink.wrap()`.
+ * Additional special abslink methods available on each proxy returned by `Abslink.wrap()`.
  */
 export interface ProxyMethods {
   [releaseProxy]: () => Promise<void>
@@ -102,7 +102,7 @@ export interface ProxyMethods {
 
 /**
  * Takes the raw type of a remote object, function or class in the other thread and returns the type as it is visible to
- * the local thread from the proxy return value of `Comlink.wrap()` or `Comlink.proxy()`.
+ * the local thread from the proxy return value of `Abslink.wrap()` or `Abslink.proxy()`.
  */
 export type Remote<T> =
   // Handle properties
@@ -124,7 +124,7 @@ export type Remote<T> =
       ): Promisify<Remote<TInstance>>
     }
     : unknown) &
-  // Include additional special comlink methods available on the proxy.
+  // Include additional special abslink methods available on the proxy.
   ProxyMethods
 
 /**
@@ -139,7 +139,7 @@ type MaybePromise<T> = Promise<T> | T
  * This is the inverse of `Remote<T>`. It takes a `Remote<T>` and returns its original input `T`.
  */
 export type Local<T> =
-  // Omit the special proxy methods (they don"t need to be supplied, comlink adds them)
+  // Omit the special proxy methods (they don"t need to be supplied, abslink adds them)
   Omit<LocalObject<T>, keyof ProxyMethods> &
   // Handle call signatures (if present)
   (T extends (...args: infer TArguments) => infer TReturn

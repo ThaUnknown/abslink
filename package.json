@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "IPC for abstract message channels, comlink style.",
   "main": "dist/umd/abslink.js",
   "module": "dist/esm/abslink.mjs",
