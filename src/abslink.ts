@@ -367,8 +367,8 @@ function throwIfProxyReleased (isReleased: boolean) {
   }
 }
 
-function releaseEndpoint (ep: Endpoint) {
-  return requestResponseMessage(ep, new Map(), {
+function releaseEndpoint (ep: Endpoint, listeners: PendingListenersMap = new Map()) {
+  return requestResponseMessage(ep, listeners, {
     type: MessageType.RELEASE
   }).then(() => {
     if (finalizer in ep && typeof ep[finalizer] === 'function') {
@@ -420,13 +420,18 @@ function createProxy<T> (
   target: object = function () { }
 ): Remote<T> {
   let isProxyReleased = false
+  const propProxyCache : Map<(string | symbol), Remote<unknown>> = new Map()
   const proxy = new Proxy(target, {
     get (_target, prop) {
       throwIfProxyReleased(isProxyReleased)
       if (prop === releaseProxy) {
         return async () => {
+          for (const subProxy of propProxyCache.values()) {
+            subProxy[releaseProxy]()
+          }
+          propProxyCache.clear()
           unregisterProxy(proxy)
-          await releaseEndpoint(ep)
+          await releaseEndpoint(ep, pendingListeners)
           pendingListeners.clear()
           isProxyReleased = true
         }
@@ -441,7 +446,14 @@ function createProxy<T> (
         }).then(v => fromWireValue(v, ep))
         return r.then.bind(r)
       }
-      return createProxy(ep, pendingListeners, [...path, prop])
+      const cachedProxy = propProxyCache.get(prop)
+      if (cachedProxy) {
+        return cachedProxy
+      }
+
+      const propProxy = createProxy(ep, pendingListeners, [...path, prop])
+      propProxyCache.set(prop, propProxy)
+      return propProxy
     },
     set (_target, prop, rawValue) {
       throwIfProxyReleased(isProxyReleased)
