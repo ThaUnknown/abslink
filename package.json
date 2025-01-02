@@ -1,11 +1,8 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "IPC for abstract message channels, comlink style.",
-  "main": "dist/umd/abslink.js",
-  "module": "dist/esm/abslink.mjs",
-  "types": "dist/umd/abslink.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c"
@@ -14,15 +11,29 @@
     "type": "git",
     "url": "https://github.com/ThaUnknown/abslink.git"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/src/abslink.d.ts",
+      "import": "./dist/esm/abslink.mjs",
+      "require": "./dist/umd/abslink.js",
+      "default": "./dist/esm/abslink.mjs"
+    },
+    "./worker": {
+      "types": "./dist/esm/adapters/worker.d.ts",
+      "import": "./dist/esm/worker.mjs",
+      "require": "./dist/umd/worker.js",
+      "default": "./dist/esm/worker.js"
+    }
+  },
   "license": "Apache-2.0",
   "devDependencies": {
     "@rollup/plugin-terser": "0.4.4",
-    "@rollup/plugin-typescript": "11.1.6",
-    "@types/node": "^22.5.5",
+    "@rollup/plugin-typescript": "12.1.2",
+    "@types/node": "^22.10.4",
     "rimraf": "^6.0.1",
-    "rollup": "4.21.3",
-    "tslib": "^2.7.0",
-    "tsx": "^4.19.1",
-    "typescript": "5.6.2"
+    "rollup": "4.29.1",
+    "tslib": "^2.8.1",
+    "tsx": "^4.19.2",
+    "typescript": "5.7.2"
   }
 }

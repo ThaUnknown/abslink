@@ -1,14 +1,17 @@
-import type { EventEmitter } from "node:events"
+/* eslint-disable no-unused-vars */
+import type { EventEmitter } from 'node:events'
+import { finalizer } from './abslink'
 
-export interface Endpoint extends EventEmitter<{message: [string]}> {
+export interface Endpoint extends Pick<EventEmitter<{message: [string]}>, 'on' | 'off'> {
   postMessage(message: string): void
+  [finalizer]: () => void | null | undefined
 }
 
 export const enum WireValueType {
-  RAW = "RAW",
-  PROXY = "PROXY",
-  THROW = "THROW",
-  HANDLER = "HANDLER",
+  RAW = 'RAW',
+  PROXY = 'PROXY',
+  THROW = 'THROW',
+  HANDLER = 'HANDLER',
 }
 
 export interface RawWireValue {
@@ -29,11 +32,11 @@ export type WireValue = RawWireValue | HandlerWireValue
 export type MessageID = string
 
 export const enum MessageType {
-  GET = "GET",
-  SET = "SET",
-  APPLY = "APPLY",
-  CONSTRUCT = "CONSTRUCT",
-  RELEASE = "RELEASE",
+  GET = 'GET',
+  SET = 'SET',
+  APPLY = 'APPLY',
+  CONSTRUCT = 'CONSTRUCT',
+  RELEASE = 'RELEASE',
 }
 
 export interface GetMessage {

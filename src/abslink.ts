@@ -1,17 +1,18 @@
+/* eslint-disable no-use-before-define */
 import {
   Endpoint,
   Message,
   MessageType,
   WireValue,
-  WireValueType,
-} from "./types"
+  WireValueType
+} from './types'
 export type { Endpoint }
 
-export const proxyMarker = Symbol("Abslink.proxy")
-export const releaseProxy = Symbol("Abslink.releaseProxy")
-export const finalizer = Symbol("Abslink.finalizer")
+export const proxyMarker = Symbol('Abslink.proxy')
+export const releaseProxy = Symbol('Abslink.releaseProxy')
+export const finalizer = Symbol('Abslink.finalizer')
 
-const throwMarker = Symbol("Abslink.thrown")
+const throwMarker = Symbol('Abslink.thrown')
 
 /**
  * Interface of values that were marked to be proxied with `abslink.proxy()`.
@@ -162,7 +163,7 @@ export type Local<T> =
     : unknown)
 
 const isObject = (val: unknown): val is object =>
-  (typeof val === "object" && val !== null) || typeof val === "function"
+  (typeof val === 'object' && val !== null) || typeof val === 'function'
 
 /**
  * Customizes the serialization of certain values as determined by `canHandle()`.
@@ -204,7 +205,7 @@ const proxyTransferHandler: TransferHandler<object> = {
   },
   deserialize (port, ep) {
     return wrap(ep)
-  },
+  }
 }
 
 interface ThrownValue {
@@ -236,8 +237,8 @@ const throwTransferHandler: TransferHandler<
         value: {
           message: value.message,
           name: value.name,
-          stack: value.stack,
-        },
+          stack: value.stack
+        }
       }
     } else {
       serialized = { isError: false, value }
@@ -252,7 +253,7 @@ const throwTransferHandler: TransferHandler<
       )
     }
     throw serialized.value
-  },
+  }
 }
 
 /**
@@ -262,15 +263,15 @@ export const transferHandlers = new Map<
   string,
   TransferHandler<unknown, unknown>
 >([
-  ["proxy", proxyTransferHandler],
-  ["throw", throwTransferHandler],
+  ['proxy', proxyTransferHandler],
+  ['throw', throwTransferHandler]
 ])
 
 export function expose (
   obj: any,
   ep: Endpoint
 ) {
-  ep.on("message", function callback (ev: string) {
+  ep.on('message', function callback (ev: string) {
     if (!ev) {
       return
     }
@@ -278,40 +279,32 @@ export function expose (
 
     const { id, type, path } = {
       path: [] as string[],
-      ...(data as Message),
+      ...(data as Message)
     }
     const argumentList = (data.argumentList || []).map((v: WireValue) => fromWireValue(v, ep))
     let returnValue
     try {
       const parent = path.slice(0, -1).reduce((obj, prop) => obj[prop], obj)
-      const rawValue = path.reduce((obj, prop) => obj[prop], obj)
+      const RawValue = path.reduce((obj, prop) => obj[prop], obj)
       switch (type) {
         case MessageType.GET:
-          {
-            returnValue = rawValue
-          }
+          returnValue = RawValue
           break
         case MessageType.SET:
-          {
-            parent[path.slice(-1)[0]] = fromWireValue(data.value, ep)
-            returnValue = true
-          }
+          parent[path.slice(-1)[0]] = fromWireValue(data.value, ep)
+          returnValue = true
           break
         case MessageType.APPLY:
-          {
-            returnValue = rawValue.apply(parent, argumentList)
-          }
+          returnValue = RawValue.apply(parent, argumentList)
           break
         case MessageType.CONSTRUCT:
           {
-            const value = new rawValue(...argumentList)
+            const value = new RawValue(...argumentList)
             returnValue = proxy(value)
           }
           break
         case MessageType.RELEASE:
-          {
-            returnValue = undefined
-          }
+          returnValue = undefined
           break
         default:
           return
@@ -328,15 +321,17 @@ export function expose (
         ep.postMessage(JSON.stringify({ ...wireValue, id }))
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
-          ep.off("message", callback)
-          releaseEndpoint(ep)
+          ep.off('message', callback)
+          if (finalizer in obj && typeof obj[finalizer] === 'function') {
+            obj[finalizer]()
+          }
         }
       })
-      .catch((error) => {
+      .catch(_ => {
         // Send Serialization Error To Caller
         const wireValue = toWireValue({
-          value: new TypeError("Unserializable return value"),
-          [throwMarker]: 0,
+          value: new TypeError('Unserializable return value'),
+          [throwMarker]: 0
         }, ep)
         ep.postMessage(JSON.stringify({ ...wireValue, id }))
       })
@@ -346,7 +341,7 @@ export function expose (
 export function wrap<T> (ep: Endpoint, target?: any): Remote<T> {
   const pendingListeners: PendingListenersMap = new Map()
 
-  ep.on("message", (ev) => {
+  ep.on('message', (ev) => {
     const data = JSON.parse(ev)
     if (!data || !data.id) {
       return
@@ -368,15 +363,15 @@ export function wrap<T> (ep: Endpoint, target?: any): Remote<T> {
 
 function throwIfProxyReleased (isReleased: boolean) {
   if (isReleased) {
-    throw new Error("Proxy has been released and is not useable")
+    throw new Error('Proxy has been released and is not useable')
   }
 }
 
 function releaseEndpoint (ep: Endpoint) {
   return requestResponseMessage(ep, new Map(), {
-    type: MessageType.RELEASE,
+    type: MessageType.RELEASE
   }).then(() => {
-    if (finalizer in ep && typeof ep[finalizer] === "function") {
+    if (finalizer in ep && typeof ep[finalizer] === 'function') {
       ep[finalizer]()
     }
   })
@@ -395,7 +390,7 @@ declare var FinalizationRegistry: FinalizationRegistry<Endpoint>
 
 const proxyCounter = new WeakMap<Endpoint, number>()
 const proxyFinalizers =
-  "FinalizationRegistry" in globalThis &&
+  'FinalizationRegistry' in globalThis &&
   new FinalizationRegistry((ep: Endpoint) => {
     const newCount = (proxyCounter.get(ep) || 0) - 1
     proxyCounter.set(ep, newCount)
@@ -436,13 +431,13 @@ function createProxy<T> (
           isProxyReleased = true
         }
       }
-      if (prop === "then") {
+      if (prop === 'then') {
         if (path.length === 0) {
           return { then: () => proxy }
         }
         const r = requestResponseMessage(ep, pendingListeners, {
           type: MessageType.GET,
-          path: path.map((p) => p.toString()),
+          path: path.map((p) => p.toString())
         }).then(v => fromWireValue(v, ep))
         return r.then.bind(r)
       }
@@ -459,7 +454,7 @@ function createProxy<T> (
         {
           type: MessageType.SET,
           path: [...path, prop].map((p) => p.toString()),
-          value,
+          value
         }
       ).then(v => fromWireValue(v, ep)) as any
     },
@@ -467,7 +462,7 @@ function createProxy<T> (
       throwIfProxyReleased(isProxyReleased)
       const last = path[path.length - 1]
       // We just pretend that `bind()` didn’t happen.
-      if (last === "bind") {
+      if (last === 'bind') {
         return createProxy(ep, pendingListeners, path.slice(0, -1))
       }
       const argumentList = processArguments(rawArgumentList, ep)
@@ -477,7 +472,7 @@ function createProxy<T> (
         {
           type: MessageType.APPLY,
           path: path.map((p) => p.toString()),
-          argumentList,
+          argumentList
         }
       ).then(v => fromWireValue(v, ep))
     },
@@ -490,15 +485,14 @@ function createProxy<T> (
         {
           type: MessageType.CONSTRUCT,
           path: path.map((p) => p.toString()),
-          argumentList,
+          argumentList
         }
       ).then(v => fromWireValue(v, ep))
-    },
+    }
   })
   registerProxy(proxy, ep)
   return proxy as any
 }
-
 
 function processArguments (argumentList: any[], ep: Endpoint): WireValue[] {
   return argumentList.map(v => toWireValue(v, ep))
@@ -515,13 +509,13 @@ function toWireValue (value: any, ep: Endpoint): WireValue {
       return {
         type: WireValueType.HANDLER,
         name,
-        value: serializedValue,
+        value: serializedValue
       }
     }
   }
   return {
     type: WireValueType.RAW,
-    value,
+    value
   }
 }
 
