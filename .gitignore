@@ -6,3 +6,5 @@ dist
 .*_cache*
 package-lock.json
 test.ts
+*.d.ts
+*.js
