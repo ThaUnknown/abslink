@@ -1,9 +1,15 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "adapters",
+    "tsconfig.json"
+  ],
   "scripts": {
     "build": "rollup -c"
   },
