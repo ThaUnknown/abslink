@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
   "files": [
@@ -18,7 +18,7 @@
   },
   "exports": {
     ".": {
-      "types": "./src/types.d.ts",
+      "types": "./src/abslink.d.ts",
       "import": "./src/abslink.js",
       "default": "./src/abslink.js"
     },
