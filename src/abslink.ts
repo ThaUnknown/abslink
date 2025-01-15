@@ -202,6 +202,7 @@ const proxyTransferHandler: TransferHandler<object> = {
     isObject(val) && (val as ProxyMarked)[proxyMarker],
   serialize (obj, ep) {
     expose(obj, ep)
+    return obj
   },
   deserialize (port, ep) {
     return wrap(ep)
