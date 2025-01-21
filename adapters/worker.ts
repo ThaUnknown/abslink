@@ -32,6 +32,6 @@ export function wrap<T> (worker: Worker): Remote<T> {
   return _wrap(createWrapper(worker))
 }
 
-export function expose (obj: any): void {
+export function expose <T extends any> (obj: T): T {
   return _expose(obj, createWrapper(self as unknown as Worker))
 }

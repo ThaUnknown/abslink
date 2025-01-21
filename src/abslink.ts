@@ -268,10 +268,10 @@ export const transferHandlers = new Map<
   ['throw', throwTransferHandler]
 ])
 
-export function expose (
-  obj: any,
+export function expose <T extends any> (
+  obj: T,
   ep: Endpoint
-) {
+): T {
   ep.on('message', function callback (ev: string) {
     if (!ev) {
       return
@@ -285,8 +285,8 @@ export function expose (
     const argumentList = (data.argumentList || []).map((v: WireValue) => fromWireValue(v, ep))
     let returnValue
     try {
-      const parent = path.slice(0, -1).reduce((obj, prop) => obj[prop], obj)
-      const RawValue = path.reduce((obj, prop) => obj[prop], obj)
+      const parent = path.slice(0, -1).reduce((obj, prop) => obj[prop], (obj as any))
+      const RawValue = path.reduce((obj, prop) => obj[prop], (obj as any))
       switch (type) {
         case MessageType.GET:
           returnValue = RawValue
@@ -323,8 +323,8 @@ export function expose (
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
           ep.off('message', callback)
-          if (finalizer in obj && typeof obj[finalizer] === 'function') {
-            obj[finalizer]()
+          if (finalizer in (obj as any) && typeof (obj as any)[finalizer] === 'function') {
+            (obj as any)[finalizer]()
           }
         }
       })
@@ -337,6 +337,8 @@ export function expose (
         ep.postMessage(JSON.stringify({ ...wireValue, id }))
       })
   } as any)
+
+  return obj
 }
 
 export function wrap<T> (ep: Endpoint, target?: any): Remote<T> {
