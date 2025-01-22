@@ -47,7 +47,7 @@ type RemoteProperty<T> =
   // If the value is a method, abslink will proxy it automatically.
   // Objects are only proxied if they are marked to be proxied.
   // Otherwise, the property is converted to a Promise that resolves the cloned value.
-  T extends Function | ProxyMarked ? Remote<T> : Promisify<T>
+  T extends Function | ProxyMarked ? Remote<T> : T extends object ? Promisify<T> & { [K in keyof T]: RemoteProperty<T[K]>; } : Promisify<T>
 
 /**
  * Takes the raw type of a property as a remote thread would see it through a proxy (e.g. when passed in as a function
