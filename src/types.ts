@@ -4,7 +4,7 @@ import { finalizer } from './abslink'
 
 export interface Endpoint extends Pick<EventEmitter<{message: [string]}>, 'on' | 'off'> {
   postMessage(message: string): void
-  [finalizer]: () => void | null | undefined
+  [finalizer]?: () => void | null | undefined
 }
 
 export const enum WireValueType {
