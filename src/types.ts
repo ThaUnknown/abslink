@@ -32,7 +32,7 @@ export interface NodeLike<T = any> extends Terminateable {
 export interface ElectronLike<T = any> extends Terminateable {
   on(type: string, listener: (e: any, data: T) => void): void;
   off(type: string, listener?: (e: any, data: T) => void): void;
-  postMessage?: (message: any) => void;
+  postMessage?: (channel: string, message: any) => void;
 }
 
 export interface Endpoint<T = any> extends Messageable {
