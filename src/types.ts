@@ -17,11 +17,20 @@ export interface Messageable extends Terminateable {
   postMessage(message: any): void;
 }
 
-export interface W3CLike<T = any> extends Terminateable {
+type W3CPartial<T> = {
   addEventListener(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
   removeEventListener(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
-  postMessage?: (message: any) => void;
+} | {
+  addListener(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
+  removeListener(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
+} | {
+  on(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
+  off(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
 }
+
+export type W3CLike<T = any> = {
+  postMessage?: (message: any) => void;
+} & Terminateable & W3CPartial<T>
 
 export interface NodeLike<T = any> extends Terminateable {
   on(type: string, listener: (data: T) => void): void;

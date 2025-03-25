@@ -7,12 +7,25 @@ function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
   return {
     on (event: string, listener: (data: any) => void) {
       const unwrapped = (event: W3CMessageEvent) => listener(event.data)
-      channel.addEventListener(event, unwrapped)
+      if ('addEventListener' in channel) {
+        channel.addEventListener(event, unwrapped)
+      } else if ('addListener' in channel) {
+        channel.addListener(event, unwrapped)
+      } else {
+        channel.on(event, unwrapped)
+      }
+
       listeners.set(listener, unwrapped)
     },
     off (event: string, listener: (...args: any[]) => void) {
       const unwrapped = listeners.get(listener)
-      channel.removeEventListener(event, unwrapped)
+      if ('removeEventListener' in channel) {
+        channel.removeEventListener(event, unwrapped)
+      } else if ('removeListener' in channel) {
+        channel.removeListener(event, unwrapped)
+      } else {
+        channel.off(event, unwrapped)
+      }
       listeners.delete(listener)
     },
     postMessage (message: any) {
