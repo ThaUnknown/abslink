@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
   "files": [
@@ -30,7 +30,6 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/node": "^22.10.4",
     "typescript": "5.7.2"
   }
 }

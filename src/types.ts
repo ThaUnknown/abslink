@@ -1,11 +1,41 @@
-/* eslint-disable no-unused-vars */
-import type { EventEmitter } from 'node:events'
 import { finalizer } from './abslink'
 
-export interface Endpoint extends Pick<EventEmitter<{message: [string]}>, 'on' | 'off'> {
-  postMessage(message: string): void
+export interface W3CEvent {
+  type: string
+}
+
+export interface W3CMessageEvent<T = any> extends W3CEvent {
+  data: T
+}
+
+interface Terminateable {
+  terminate?(): void;
   [finalizer]?: () => void | null | undefined
 }
+
+export interface Messageable extends Terminateable {
+  postMessage(message: any): void;
+}
+
+export interface W3CLike<T = any> extends Terminateable {
+  addEventListener(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
+  removeEventListener(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
+  postMessage?: (message: any) => void;
+}
+
+export interface NodeLike<T = any> extends Terminateable {
+  on(type: string, listener: (data: T) => void): void;
+  off(type: string, listener?: (data: T) => void): void;
+  postMessage?: (message: any) => void;
+}
+
+export interface ElectronLike<T = any> extends Terminateable {
+  on(type: string, listener: (e: any, data: T) => void): void;
+  off(type: string, listener?: (e: any, data: T) => void): void;
+  postMessage?: (message: any) => void;
+}
+
+export interface Endpoint extends NodeLike {}
 
 export const enum WireValueType {
   RAW = 'RAW',
