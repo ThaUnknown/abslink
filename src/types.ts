@@ -35,7 +35,10 @@ export interface ElectronLike<T = any> extends Terminateable {
   postMessage?: (message: any) => void;
 }
 
-export interface Endpoint extends NodeLike {}
+export interface Endpoint<T = any> extends Messageable {
+  on(type: string, listener: (data: T) => void): void;
+  off(type: string, listener?: (data: T) => void): void;
+}
 
 export const enum WireValueType {
   RAW = 'RAW',

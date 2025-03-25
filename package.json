@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
   "files": [
