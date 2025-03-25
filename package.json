@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
   "files": [
@@ -22,10 +22,20 @@
       "import": "./src/abslink.js",
       "default": "./src/abslink.js"
     },
-    "./worker": {
-      "types": "./adapters/worker.d.ts",
-      "import": "./adapters/worker.js",
-      "default": "./adapters/worker.js"
+    "./node": {
+      "types": "./adapters/node.d.ts",
+      "import": "./adapters/node.js",
+      "default": "./adapters/node.js"
+    },
+    "./w3c": {
+      "types": "./adapters/w3c.d.ts",
+      "import": "./adapters/w3c.js",
+      "default": "./adapters/w3c.js"
+    },
+    "./electron": {
+      "types": "./adapters/electron.d.ts",
+      "import": "./adapters/electron.js",
+      "default": "./adapters/electron.js"
     }
   },
   "license": "Apache-2.0",
