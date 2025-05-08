@@ -272,11 +272,10 @@ export function expose <T extends any> (
   obj: T,
   ep: Endpoint
 ): T {
-  ep.on('message', function callback (ev: string) {
-    if (!ev) {
+  ep.on('message', function callback (data: any) {
+    if (!data) {
       return
     }
-    const data = JSON.parse(ev)
 
     const { id, type, path } = {
       path: [] as string[],
@@ -319,7 +318,7 @@ export function expose <T extends any> (
       })
       .then((returnValue) => {
         const wireValue = toWireValue(returnValue, ep)
-        ep.postMessage(JSON.stringify({ ...wireValue, id }))
+        ep.postMessage({ ...wireValue, id })
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
           ep.off('message', callback)
@@ -334,7 +333,7 @@ export function expose <T extends any> (
           value: new TypeError('Unserializable return value'),
           [throwMarker]: 0
         }, ep)
-        ep.postMessage(JSON.stringify({ ...wireValue, id }))
+        ep.postMessage({ ...wireValue, id })
       })
   } as any)
 
@@ -344,8 +343,7 @@ export function expose <T extends any> (
 export function wrap<T> (ep: Endpoint, target?: any): Remote<T> {
   const pendingListeners: PendingListenersMap = new Map()
 
-  ep.on('message', (ev) => {
-    const data = JSON.parse(ev)
+  ep.on('message', (data) => {
     if (!data || !data.id) {
       return
     }
@@ -551,6 +549,6 @@ function requestResponseMessage (
   return new Promise((resolve) => {
     const id = Math.trunc(Math.random() * Number.MAX_SAFE_INTEGER).toString()
     pendingListeners.set(id, resolve)
-    ep.postMessage(JSON.stringify({ id, ...msg }))
+    ep.postMessage({ id, ...msg })
   })
 }
