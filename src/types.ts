@@ -1,4 +1,4 @@
-import { finalizer } from './abslink'
+import type { finalizer } from './abslink'
 
 export interface W3CEvent {
   type: string
@@ -9,44 +9,44 @@ export interface W3CMessageEvent<T = any> extends W3CEvent {
 }
 
 interface Terminateable {
-  terminate?(): void;
-  [finalizer]?: () => void | null | undefined
+  terminate?: () => void
+  [finalizer]?: () => void
 }
 
 export interface Messageable extends Terminateable {
-  postMessage(message: any): void;
+  postMessage: (message: any) => void
 }
 
 type W3CPartial<T> = {
-  addEventListener(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
-  removeEventListener(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
+  addEventListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
+  removeEventListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
 } | {
-  addListener(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
-  removeListener(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
+  addListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
+  removeListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
 } | {
-  on(type: string, listener: (event: W3CMessageEvent<T>) => void): void;
-  off(type: string, listener?: (event: W3CMessageEvent<T>) => void): void;
+  on: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
+  off: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
 }
 
 export type W3CLike<T = any> = {
-  postMessage?: (message: any) => void;
+  postMessage?: (message: any) => void
 } & Terminateable & W3CPartial<T>
 
 export interface NodeLike<T = any> extends Terminateable {
-  on(type: string, listener: (data: T) => void): void;
-  off(type: string, listener?: (data: T) => void): void;
-  postMessage?: (message: any) => void;
+  on: (type: string, listener: (data: T) => void) => void
+  off: (type: string, listener: (data: T) => void) => void
+  postMessage?: (message: any) => void
 }
 
 export interface ElectronLike<T = any> extends Terminateable {
-  on(type: string, listener: (e: any, data: T) => void): void;
-  off(type: string, listener?: (e: any, data: T) => void): void;
-  postMessage?: (channel: string, message: any) => void;
+  on: (type: string, listener: (e: any, data: T) => void) => void
+  off: (type: string, listener: (e: any, data: T) => void) => void
+  postMessage?: (channel: string, message: any) => void
 }
 
 export interface Endpoint<T = any> extends Messageable {
-  on(type: string, listener: (data: T) => void): void;
-  off(type: string, listener?: (data: T) => void): void;
+  on: (type: string, listener: (data: T) => void) => void
+  off: (type: string, listener: (data: T) => void) => void
 }
 
 export const enum WireValueType {
@@ -59,6 +59,7 @@ export const enum WireValueType {
 export interface RawWireValue {
   id?: string
   type: WireValueType.RAW
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   value: {}
 }
 
@@ -81,35 +82,35 @@ export const enum MessageType {
   RELEASE = 'RELEASE',
 }
 
-export interface GetMessage {
+interface BaseMessage {
   id?: MessageID
+  markerID?: number
+}
+
+export interface GetMessage extends BaseMessage {
   type: MessageType.GET
   path: string[]
 }
 
-export interface SetMessage {
-  id?: MessageID
+export interface SetMessage extends BaseMessage {
   type: MessageType.SET
   path: string[]
   value: WireValue
 }
 
-export interface ApplyMessage {
-  id?: MessageID
+export interface ApplyMessage extends BaseMessage {
   type: MessageType.APPLY
   path: string[]
   argumentList: WireValue[]
 }
 
-export interface ConstructMessage {
-  id?: MessageID
+export interface ConstructMessage extends BaseMessage {
   type: MessageType.CONSTRUCT
   path: string[]
   argumentList: WireValue[]
 }
 
-export interface ReleaseMessage {
-  id?: MessageID
+export interface ReleaseMessage extends BaseMessage {
   type: MessageType.RELEASE
 }
 

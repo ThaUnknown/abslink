@@ -1,1 +1,1 @@
-export { expose, wrap } from '../src/abslink'
+export { expose, wrap } from '../src/abslink.ts'
