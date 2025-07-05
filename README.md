@@ -1,3 +1,19 @@
 # comlink for abstract IPC
 
-TODO: construct returns additional errrors, needs work, rest of the package is usable
+```ts
+import { expose } from 'abslink'
+
+export default expose({
+  add: (a: number, b: number) => a + b
+})
+```
+and
+```ts
+import { wrap } from 'comlink'
+import worker from './exposed.ts?worker'
+import type Maths from './exposed.ts'
+
+const threaded = wrap<Maths>(worker)
+
+const res = await threaded.add(1, 3) // 4
+```
