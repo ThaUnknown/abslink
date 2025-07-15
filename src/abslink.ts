@@ -7,13 +7,13 @@ import {
   WireValueType
 } from './types.ts'
 
-export type { Endpoint }
+export * from './types.ts'
 
 export const proxyMarker = Symbol('Abslink.proxy')
 export const releaseProxy = Symbol('Abslink.releaseProxy')
 export const finalizer = Symbol('Abslink.finalizer')
 
-const throwMarker = Symbol('Abslink.thrown')
+export const throwMarker = Symbol('Abslink.thrown')
 
 /**
  * Interface of values that were marked to be proxied with `abslink.proxy()`.
@@ -159,7 +159,7 @@ export type Local<T> =
         MaybePromise<Local<Unpromisify<TInstance>>>
     : unknown)
 
-const isObject = (val: unknown): val is object =>
+export const isObject = (val: unknown): val is object =>
   (typeof val === 'object' && val !== null) || typeof val === 'function'
 
 /**
