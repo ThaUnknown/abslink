@@ -1,3 +1,4 @@
+/* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 import {
   type Endpoint,
@@ -267,10 +268,9 @@ const throwTransferHandler: TransferHandler<
 /**
  * Allows customizing the serialization of certain values.
  */
-// @ts-expect-error idk
 export const transferHandlers = new Map<
   string,
-  TransferHandler<unknown, unknown>
+  TransferHandler<any, any>
 >([
   ['proxy', proxyTransferHandler],
   ['throw', throwTransferHandler]
@@ -382,6 +382,7 @@ async function releaseEndpoint (epWithPendingListeners: EndpointWithPendingListe
 }
 
 interface FinalizationRegistry<T> {
+  // eslint-disable-next-line @typescript-eslint/no-misused-new
   new(cb: (heldValue: T) => void): FinalizationRegistry<T>
   register: (
     weakItem: object,
@@ -390,6 +391,7 @@ interface FinalizationRegistry<T> {
   ) => void
   unregister: (unregisterToken: object) => void
 }
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 declare var FinalizationRegistry: FinalizationRegistry<EndpointWithPendingListeners>
 
 const proxyCounter = new WeakMap<EndpointWithPendingListeners, number>()
