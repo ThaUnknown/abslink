@@ -276,6 +276,20 @@ export const transferHandlers = new Map<
   ['throw', throwTransferHandler]
 ])
 
+function filterPath <T extends object> (path: string[], obj: T) {
+  let parent: any = obj
+  const parentPath = path.slice(0, -1)
+  for (const segment of parentPath) {
+    // Object.hasOwn() would work, but backwards compatibility...
+    if (Object.prototype.hasOwnProperty.call(parent, segment)) {
+      parent = parent[segment]
+    }
+  }
+  const lastSegment = path[path.length - 1]
+  const RawValue = lastSegment ? parent[lastSegment] : parent
+  return { parent, RawValue, lastSegment }
+}
+
 export function expose <T extends object> (
   obj: T,
   ep: Endpoint,
@@ -292,14 +306,13 @@ export function expose <T extends object> (
     const argumentList = (data.argumentList ?? []).map((v: WireValue) => fromWireValue(v, ep))
     let returnValue
     try {
-      const parent = path.slice(0, -1).reduce<any>((obj, prop) => obj[prop], (obj))
-      const RawValue = path.reduce<any>((obj, prop) => obj[prop], (obj))
+      const { parent, RawValue, lastSegment } = filterPath(path, obj)
       switch (type) {
         case MessageType.GET:
           returnValue = RawValue
           break
         case MessageType.SET:
-          parent[path.slice(-1)[0]!] = fromWireValue(data.value, ep)
+          parent[lastSegment!] = fromWireValue(data.value, ep)
           returnValue = true
           break
         case MessageType.APPLY:
