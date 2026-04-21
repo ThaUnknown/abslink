@@ -12,7 +12,7 @@ export interface Terminateable {
 }
 
 export interface Messageable extends Terminateable {
-  postMessage: (message: any, transfer?: Transferable[]) => void
+  postMessage: (message: any, ...args: any[]) => void
 }
 
 export type W3CLike<T = any> = Messageable & ({
@@ -34,7 +34,7 @@ export interface NodeLike<T = any> extends Messageable {
 export interface ElectronLike<T = any> extends Terminateable {
   on: (type: string, listener: (e: any, data: T) => void) => void
   off: (type: string, listener: (e: any, data: T) => void) => void
-  postMessage?: (channel: string, message: any, transfer?: Transferable[]) => void
+  postMessage?: (channel: string, message: any, ...args: any[]) => void
 }
 
 export interface Endpoint<T = any> extends Messageable {
