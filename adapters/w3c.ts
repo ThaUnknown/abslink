@@ -4,6 +4,8 @@ import type { Messageable, W3CMessageEvent, W3CLike } from '../src/types.ts'
 
 function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
   const listeners = new WeakMap<(...args: any[]) => void, (...args: any[]) => void>()
+  channel.start?.()
+  messageable.start?.()
 
   return {
     on (event: string, listener: (data: any) => void) {
@@ -29,8 +31,8 @@ function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
       }
       listeners.delete(listener)
     },
-    postMessage (message: any) {
-      messageable.postMessage(message)
+    postMessage (message: any, transfer?: Transferable[]) {
+      messageable.postMessage(message, transfer)
     },
     close () {
       if (channel !== globalThis) channel.close?.()
@@ -43,6 +45,6 @@ export function wrap<T> (channel: W3CLike, messageable: Messageable = channel as
   return _wrap(createWrapper(channel, messageable))
 }
 
-export function expose <T extends object> (obj: T, channel: W3CLike = globalThis, messageable: Messageable = channel as unknown as Messageable): T {
+export function expose <T extends object> (obj: T, channel = globalThis as W3CLike, messageable: Messageable = channel as Messageable): T {
   return _expose(obj, createWrapper(channel, messageable))
 }

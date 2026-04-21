@@ -1,5 +1,3 @@
-import type { finalizer } from './abslink'
-
 export interface W3CEvent {
   type: string
 }
@@ -8,16 +6,16 @@ export interface W3CMessageEvent<T = any> extends W3CEvent {
   data: T
 }
 
-interface Terminateable {
+export interface Terminateable {
   close?: () => void
-  [finalizer]?: () => void
+  start?: () => void
 }
 
 export interface Messageable extends Terminateable {
-  postMessage: (message: any) => void
+  postMessage: (message: any, transfer?: Transferable[]) => void
 }
 
-type W3CPartial<T> = {
+export type W3CLike<T = any> = Messageable & ({
   addEventListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
   removeEventListener: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
 } | {
@@ -26,22 +24,17 @@ type W3CPartial<T> = {
 } | {
   on: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
   off: (type: string, listener: (event: W3CMessageEvent<T>) => void) => void
-}
+})
 
-export type W3CLike<T = any> = {
-  postMessage?: (message: any) => void
-} & Terminateable & W3CPartial<T>
-
-export interface NodeLike<T = any> extends Terminateable {
+export interface NodeLike<T = any> extends Messageable {
   on: (type: string, listener: (data: T) => void) => void
   off: (type: string, listener: (data: T) => void) => void
-  postMessage?: (message: any) => void
 }
 
 export interface ElectronLike<T = any> extends Terminateable {
   on: (type: string, listener: (e: any, data: T) => void) => void
   off: (type: string, listener: (e: any, data: T) => void) => void
-  postMessage?: (channel: string, message: any) => void
+  postMessage?: (channel: string, message: any, transfer?: Transferable[]) => void
 }
 
 export interface Endpoint<T = any> extends Messageable {

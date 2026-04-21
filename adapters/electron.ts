@@ -3,15 +3,16 @@ import { ipcMain, ipcRenderer } from 'electron'
 
 import { wrap as _wrap, expose as _expose, type Endpoint, type Remote } from '../src/abslink.ts'
 
-import type { ElectronLike, W3CEvent } from '../src/types.ts'
+import type { ElectronLike, Terminateable, W3CEvent } from '../src/types.ts'
 
-interface Messageable {
-  postMessage: (channel: string, message: any) => void
-  close?: () => void
+interface Messageable extends Terminateable {
+  postMessage: (channel: string, message: any, transfer?: Transferable[]) => void
 }
 
 function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoint {
   const listeners = new WeakMap<(...args: any[]) => void, (...args: any[]) => void>()
+  channel.start?.()
+  messageable.start?.()
 
   return {
     on (event: string, listener: (data: any) => void) {
@@ -24,8 +25,8 @@ function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoi
       channel.off(event, unwrapped)
       listeners.delete(listener)
     },
-    postMessage (message: any) {
-      messageable.postMessage('message', message)
+    postMessage (message: any, transfer?: Transferable[]) {
+      messageable.postMessage('message', message, transfer)
     },
     close () {
       // @ts-expect-error w/e

@@ -181,7 +181,7 @@ export interface TransferHandler<T, S = void> {
    * value that can be sent in a message, consisting of structured-cloneable
    * values and/or transferrable objects.
    */
-  serialize: (value: T, ep: Endpoint) => S
+  serialize: (value: T, ep: Endpoint) => [S, Transferable[]]
 
   /**
    * Gets called to deserialize an incoming value that was serialized in the
@@ -199,7 +199,7 @@ const proxyTransferHandler: TransferHandler<any, any> = {
   serialize (obj: ProxyMarked, ep) {
     const markerID = obj[proxyMarker]
     expose(obj, ep, markerID)
-    return markerID
+    return [markerID, []]
   },
   deserialize (markerID, ep) {
     return wrap(ep, markerID)
@@ -246,7 +246,7 @@ const throwTransferHandler: TransferHandler<
     } else {
       serialized = { isError: false, value }
     }
-    return serialized
+    return [serialized, []]
   },
   deserialize (serialized) {
     if (serialized.isError) {
@@ -330,8 +330,8 @@ export function expose <T extends object> (
         return { value, [throwMarker]: 0 }
       })
       .then((returnValue) => {
-        const wireValue = toWireValue(returnValue, ep)
-        ep.postMessage({ ...wireValue, id, markerID: rootMarkerID })
+        const [wireValue, transfer] = toWireValue(returnValue, ep)
+        ep.postMessage({ ...wireValue, id, markerID: rootMarkerID }, transfer)
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
           ep.off('message', callback)
@@ -341,11 +341,11 @@ export function expose <T extends object> (
       })
       .catch(_ => {
         // Send Serialization Error To Caller
-        const wireValue = toWireValue({
+        const [wireValue, transfer] = toWireValue({
           value: new TypeError('Unserializable return value'),
           [throwMarker]: 0
         }, ep)
-        ep.postMessage({ ...wireValue, id, markerID: rootMarkerID })
+        ep.postMessage({ ...wireValue, id, markerID: rootMarkerID }, transfer)
       })
   } as any)
 
@@ -462,14 +462,15 @@ function createProxy<T> (
       throwIfProxyReleased(isProxyReleased)
       // FIXME: ES6 Proxy Handler `set` methods are supposed to return a
       // boolean. To show good will, we return true asynchronously ¯\_(ツ)_/¯
-      const value = toWireValue(rawValue, epWithPendingListeners.endpoint)
+      const [value, transfer] = toWireValue(rawValue, epWithPendingListeners.endpoint)
       return requestResponseMessage(
         epWithPendingListeners,
         {
           type: MessageType.SET,
           path: [...path, prop].map((p) => p.toString()),
           value
-        }
+        },
+        transfer
       ).then(v => fromWireValue(v, epWithPendingListeners.endpoint)) as any
     },
     apply (_target, _thisArg, rawArgumentList) {
@@ -479,26 +480,28 @@ function createProxy<T> (
       if (last === 'bind') {
         return createProxy(epWithPendingListeners, path.slice(0, -1))
       }
-      const argumentList = processArguments(rawArgumentList, epWithPendingListeners)
+      const [argumentList, transfer] = processArguments(rawArgumentList, epWithPendingListeners)
       return requestResponseMessage(
         epWithPendingListeners,
         {
           type: MessageType.APPLY,
           path: path.map((p) => p.toString()),
           argumentList
-        }
+        },
+        transfer
       ).then(v => fromWireValue(v, epWithPendingListeners.endpoint))
     },
     construct (_target, rawArgumentList) {
       throwIfProxyReleased(isProxyReleased)
-      const argumentList = processArguments(rawArgumentList, epWithPendingListeners)
+      const [argumentList, transfer] = processArguments(rawArgumentList, epWithPendingListeners)
       return requestResponseMessage(
         epWithPendingListeners,
         {
           type: MessageType.CONSTRUCT,
           path: path.map((p) => p.toString()),
           argumentList
-        }
+        },
+        transfer
       ).then(v => fromWireValue(v, epWithPendingListeners.endpoint))
     }
   })
@@ -506,29 +509,42 @@ function createProxy<T> (
   return proxy as any
 }
 
-function processArguments (argumentList: any[], epWithPendingListeners: EndpointWithPendingListeners): WireValue[] {
-  return argumentList.map(v => toWireValue(v, epWithPendingListeners.endpoint))
+const transferCache = new WeakMap<any, Transferable[]>()
+export function transfer<T> (obj: T, transfers: Transferable[]): T {
+  transferCache.set(obj, transfers)
+  return obj
+}
+
+function processArguments (argumentList: any[], epWithPendingListeners: EndpointWithPendingListeners): [WireValue[], Transferable[]] {
+  const wireValues: WireValue[] = []
+  const transferables: Transferable[] = []
+  for (const argument of argumentList) {
+    const [wireValue, transfer] = toWireValue(argument, epWithPendingListeners.endpoint)
+    wireValues.push(wireValue)
+    transferables.push(...transfer)
+  }
+  return [wireValues, transferables]
 }
 
 export function proxy<T extends object> (obj: T): T & ProxyMarked {
   return Object.assign(obj, { [proxyMarker]: randomId() }) as any
 }
 
-function toWireValue (value: any, ep: Endpoint): WireValue {
+function toWireValue (value: any, ep: Endpoint): [WireValue, Transferable[]] {
   for (const [name, handler] of transferHandlers) {
     if (handler.canHandle(value)) {
-      const serializedValue = handler.serialize(value, ep)
-      return {
+      const [serializedValue, transfer] = handler.serialize(value, ep)
+      return [{
         type: WireValueType.HANDLER,
         name,
         value: serializedValue
-      }
+      }, transfer]
     }
   }
-  return {
+  return [{
     type: WireValueType.RAW,
     value
-  }
+  }, transferCache.get(value) ?? []]
 }
 
 function fromWireValue (value: WireValue, ep: Endpoint): any {
@@ -542,12 +558,13 @@ function fromWireValue (value: WireValue, ep: Endpoint): any {
 
 function requestResponseMessage (
   ep: EndpointWithPendingListeners,
-  msg: Message
+  msg: Message,
+  transfer?: Transferable[]
 ): Promise<WireValue> {
   return new Promise((resolve) => {
     const id = randomId()
     ep.pendingListeners.set(id, resolve)
-    ep.endpoint.postMessage({ id, ...msg, markerID: ep.rootMarkerID })
+    ep.endpoint.postMessage({ id, ...msg, markerID: ep.rootMarkerID }, transfer)
   })
 }
 
