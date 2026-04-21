@@ -9,3 +9,4 @@ test.ts
 *.d.ts
 *.js
 *.js.map
+test/*

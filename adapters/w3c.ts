@@ -1,4 +1,4 @@
-import { wrap as _wrap, expose as _expose, type Endpoint, finalizer, type Remote } from '../src/abslink.ts'
+import { wrap as _wrap, expose as _expose, type Endpoint, type Remote } from '../src/abslink.ts'
 
 import type { Messageable, W3CMessageEvent, W3CLike } from '../src/types.ts'
 
@@ -32,9 +32,9 @@ function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
     postMessage (message: any) {
       messageable.postMessage(message)
     },
-    [finalizer]: () => {
-      channel.terminate?.()
-      messageable.terminate?.()
+    close () {
+      if (channel !== globalThis) channel.close?.()
+      if (messageable !== globalThis) messageable.close?.()
     }
   }
 }
@@ -43,6 +43,6 @@ export function wrap<T> (channel: W3CLike, messageable: Messageable = channel as
   return _wrap(createWrapper(channel, messageable))
 }
 
-export function expose <T extends object> (obj: T, channel: W3CLike = self, messageable: Messageable = channel as unknown as Messageable): T {
+export function expose <T extends object> (obj: T, channel: W3CLike = globalThis, messageable: Messageable = channel as unknown as Messageable): T {
   return _expose(obj, createWrapper(channel, messageable))
 }

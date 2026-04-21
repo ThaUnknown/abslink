@@ -5,6 +5,7 @@
     "adapters/**/*.ts"
   ],
   "exclude": [
+    "**/**.d.ts",
     "dist",
     "node_modules"
   ]

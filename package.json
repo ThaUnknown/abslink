@@ -1,7 +1,7 @@
 {
   "name": "abslink",
   "type": "module",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "description": "IPC for abstract message channels, comlink style.",
   "sideEffects": false,
   "files": [
@@ -10,8 +10,7 @@
     "tsconfig.json"
   ],
   "scripts": {
-    "build": "tsc",
-    "sandbox": "node ./sandbox/main.js"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

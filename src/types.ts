@@ -9,7 +9,7 @@ export interface W3CMessageEvent<T = any> extends W3CEvent {
 }
 
 interface Terminateable {
-  terminate?: () => void
+  close?: () => void
   [finalizer]?: () => void
 }
 
@@ -49,23 +49,23 @@ export interface Endpoint<T = any> extends Messageable {
   off: (type: string, listener: (data: T) => void) => void
 }
 
-export const enum WireValueType {
-  RAW = 'RAW',
-  PROXY = 'PROXY',
-  THROW = 'THROW',
-  HANDLER = 'HANDLER',
-}
+export const WireValueType = {
+  RAW: 'RAW',
+  PROXY: 'PROXY',
+  THROW: 'THROW',
+  HANDLER: 'HANDLER'
+} as const
 
 export interface RawWireValue {
   id?: string
-  type: WireValueType.RAW
+  type: typeof WireValueType.RAW
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   value: {}
 }
 
 export interface HandlerWireValue {
   id?: string
-  type: WireValueType.HANDLER
+  type: typeof WireValueType.HANDLER
   name: string
   value: unknown
 }
@@ -74,12 +74,12 @@ export type WireValue = RawWireValue | HandlerWireValue
 
 export type MessageID = string
 
-export const enum MessageType {
-  GET = 'GET',
-  SET = 'SET',
-  APPLY = 'APPLY',
-  CONSTRUCT = 'CONSTRUCT',
-  RELEASE = 'RELEASE',
+export const MessageType = {
+  GET: 'GET',
+  SET: 'SET',
+  APPLY: 'APPLY',
+  CONSTRUCT: 'CONSTRUCT',
+  RELEASE: 'RELEASE'
 }
 
 interface BaseMessage {
@@ -88,30 +88,30 @@ interface BaseMessage {
 }
 
 export interface GetMessage extends BaseMessage {
-  type: MessageType.GET
+  type: typeof MessageType.GET
   path: string[]
 }
 
 export interface SetMessage extends BaseMessage {
-  type: MessageType.SET
+  type: typeof MessageType.SET
   path: string[]
   value: WireValue
 }
 
 export interface ApplyMessage extends BaseMessage {
-  type: MessageType.APPLY
+  type: typeof MessageType.APPLY
   path: string[]
   argumentList: WireValue[]
 }
 
 export interface ConstructMessage extends BaseMessage {
-  type: MessageType.CONSTRUCT
+  type: typeof MessageType.CONSTRUCT
   path: string[]
   argumentList: WireValue[]
 }
 
 export interface ReleaseMessage extends BaseMessage {
-  type: MessageType.RELEASE
+  type: typeof MessageType.RELEASE
 }
 
 export type Message =

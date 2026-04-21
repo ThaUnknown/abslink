@@ -1,4 +1,3 @@
-/* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 import {
   type Endpoint,
@@ -123,7 +122,7 @@ export type Remote<T> =
         ...args: {
           [I in keyof TArguments]: UnproxyOrClone<TArguments[I]>
         }
-      ) => Promisify<Remote<TInstance>>
+      ) => Remote<TInstance> & Promisify<Remote<TInstance>>
     : unknown) &
   // Include additional special abslink methods available on the proxy.
   ProxyMethods
@@ -203,7 +202,7 @@ const proxyTransferHandler: TransferHandler<any, any> = {
     return markerID
   },
   deserialize (markerID, ep) {
-    return wrap(ep, undefined, markerID)
+    return wrap(ep, markerID)
   }
 }
 
@@ -221,11 +220,7 @@ type PendingListenersMap = Map<
 interface EndpointWithPendingListeners {
   endpoint: Endpoint
   pendingListeners: PendingListenersMap
-  nextRequestId: number
-}
-
-function closeEndPoint (endpoint: Endpoint) {
-  if ('close' in endpoint && typeof endpoint.close === 'function') endpoint.close()
+  rootMarkerID?: number
 }
 
 /**
@@ -319,10 +314,7 @@ export function expose <T extends object> (
           returnValue = RawValue.apply(parent, argumentList)
           break
         case MessageType.CONSTRUCT:
-          {
-            const value = new RawValue(...argumentList)
-            returnValue = proxy(value)
-          }
+          returnValue = proxy(new RawValue(...argumentList))
           break
         case MessageType.RELEASE:
           returnValue = undefined
@@ -343,9 +335,8 @@ export function expose <T extends object> (
         if (type === MessageType.RELEASE) {
           // detach and deactive after sending release response above.
           ep.off('message', callback)
-          if (finalizer in (obj as any) && typeof (obj as any)[finalizer] === 'function') {
-            (obj as any)[finalizer]()
-          }
+          ;(obj as any)[finalizer]?.()
+          ep.close?.()
         }
       })
       .catch(_ => {
@@ -361,10 +352,10 @@ export function expose <T extends object> (
   return obj
 }
 
-export function wrap<T> (ep: Endpoint, target?: any, rootMarkerID?: number): Remote<T> {
+export function wrap<T> (endpoint: Endpoint, rootMarkerID?: number): Remote<T> {
   const pendingListeners: PendingListenersMap = new Map()
 
-  ep.on('message', (data) => {
+  endpoint.on('message', (data) => {
     if (!data?.id) {
       return
     }
@@ -380,7 +371,7 @@ export function wrap<T> (ep: Endpoint, target?: any, rootMarkerID?: number): Rem
     }
   })
 
-  return createProxy<T>({ endpoint: ep, pendingListeners, nextRequestId: 1 }, [], target, rootMarkerID) as any
+  return createProxy<T>({ endpoint, pendingListeners, rootMarkerID })
 }
 
 function throwIfProxyReleased (isReleased: boolean) {
@@ -391,21 +382,8 @@ function throwIfProxyReleased (isReleased: boolean) {
 
 async function releaseEndpoint (epWithPendingListeners: EndpointWithPendingListeners) {
   await requestResponseMessage(epWithPendingListeners, { type: MessageType.RELEASE })
-  closeEndPoint(epWithPendingListeners.endpoint)
+  epWithPendingListeners.endpoint.close?.()
 }
-
-interface FinalizationRegistry<T> {
-  // eslint-disable-next-line @typescript-eslint/no-misused-new
-  new(cb: (heldValue: T) => void): FinalizationRegistry<T>
-  register: (
-    weakItem: object,
-    heldValue: T,
-    unregisterToken?: object
-  ) => void
-  unregister: (unregisterToken: object) => void
-}
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-declare var FinalizationRegistry: FinalizationRegistry<EndpointWithPendingListeners>
 
 const proxyCounter = new WeakMap<EndpointWithPendingListeners, number>()
 const proxyFinalizers =
@@ -441,13 +419,11 @@ function unregisterProxy (proxy: object) {
 
 function createProxy<T> (
   epWithPendingListeners: EndpointWithPendingListeners,
-  path: Array<string | number | symbol> = [],
-  target: object = function () { },
-  rootMarkerID?: number
+  path: Array<string | number | symbol> = []
 ): Remote<T> {
   let isProxyReleased = false
   const propProxyCache = new Map<(string | symbol), Remote<unknown>>()
-  const proxy = new Proxy(target, {
+  const proxy = new Proxy(function () {}, {
     get (_target, prop) {
       throwIfProxyReleased(isProxyReleased)
       if (prop === releaseProxy) {
@@ -469,7 +445,6 @@ function createProxy<T> (
         }
         const r = requestResponseMessage(epWithPendingListeners, {
           type: MessageType.GET,
-          markerID: rootMarkerID,
           path: path.map((p) => p.toString())
         }).then(v => fromWireValue(v, epWithPendingListeners.endpoint))
         return r.then.bind(r)
@@ -479,7 +454,7 @@ function createProxy<T> (
         return cachedProxy
       }
 
-      const propProxy = createProxy(epWithPendingListeners, [...path, prop], undefined, rootMarkerID)
+      const propProxy = createProxy(epWithPendingListeners, [...path, prop])
       propProxyCache.set(prop, propProxy)
       return propProxy
     },
@@ -492,7 +467,6 @@ function createProxy<T> (
         epWithPendingListeners,
         {
           type: MessageType.SET,
-          markerID: rootMarkerID,
           path: [...path, prop].map((p) => p.toString()),
           value
         }
@@ -503,14 +477,13 @@ function createProxy<T> (
       const last = path[path.length - 1]
       // We just pretend that `bind()` didn’t happen.
       if (last === 'bind') {
-        return createProxy(epWithPendingListeners, path.slice(0, -1), undefined, rootMarkerID)
+        return createProxy(epWithPendingListeners, path.slice(0, -1))
       }
       const argumentList = processArguments(rawArgumentList, epWithPendingListeners)
       return requestResponseMessage(
         epWithPendingListeners,
         {
           type: MessageType.APPLY,
-          markerID: rootMarkerID,
           path: path.map((p) => p.toString()),
           argumentList
         }
@@ -523,7 +496,6 @@ function createProxy<T> (
         epWithPendingListeners,
         {
           type: MessageType.CONSTRUCT,
-          markerID: rootMarkerID,
           path: path.map((p) => p.toString()),
           argumentList
         }
@@ -575,10 +547,26 @@ function requestResponseMessage (
   return new Promise((resolve) => {
     const id = randomId()
     ep.pendingListeners.set(id, resolve)
-    ep.endpoint.postMessage({ id, ...msg })
+    ep.endpoint.postMessage({ id, ...msg, markerID: ep.rootMarkerID })
   })
 }
 
+const hex: string[] = []
+const alphabet = '0123456789abcdef'
+
+for (let i = 0; i < 256; i++) {
+  hex[i] = alphabet[i >> 4 & 0xf]! + alphabet[i & 0xf]!
+}
+let step = 0
+let buffer = ''
+
 function randomId () {
-  return Math.trunc(Math.random() * Number.MAX_SAFE_INTEGER).toString()
+  let i = 0
+  if (!buffer || ((step + 16) > 256 * 2)) {
+    for (buffer = '', step = 0; i < 256; ++i) {
+      buffer += hex[Math.random() * 256 | 0]
+    }
+  }
+
+  return buffer.substring(step, ++step + 16)
 }

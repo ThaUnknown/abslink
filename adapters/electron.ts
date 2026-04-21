@@ -1,13 +1,13 @@
 // @ts-expect-error yeah no types for electron
 import { ipcMain, ipcRenderer } from 'electron'
 
-import { wrap as _wrap, expose as _expose, type Endpoint, finalizer, type Remote } from '../src/abslink.ts'
+import { wrap as _wrap, expose as _expose, type Endpoint, type Remote } from '../src/abslink.ts'
 
 import type { ElectronLike, W3CEvent } from '../src/types.ts'
 
 interface Messageable {
   postMessage: (channel: string, message: any) => void
-  terminate?: () => void
+  close?: () => void
 }
 
 function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoint {
@@ -27,9 +27,10 @@ function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoi
     postMessage (message: any) {
       messageable.postMessage('message', message)
     },
-    [finalizer]: () => {
-      channel.terminate?.()
-      messageable.terminate?.()
+    close () {
+      // @ts-expect-error w/e
+      if (channel !== globalThis) channel.close?.()
+      if (messageable !== globalThis) messageable.close?.()
     }
   }
 }
