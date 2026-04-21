@@ -220,7 +220,21 @@ type PendingListenersMap = Map<
 interface EndpointWithPendingListeners {
   endpoint: Endpoint
   pendingListeners: PendingListenersMap
-  rootMarkerID?: number
+  context: {
+    rootMarkerID: () => number | undefined
+    state?: ProxyState
+  }
+}
+
+interface ProxyState {
+  markerID?: number
+  settlement: Promise<void>
+}
+function createProxyContext (rootMarkerID?: number, state?: ProxyState) {
+  return {
+    rootMarkerID: () => state?.markerID ?? rootMarkerID,
+    state
+  }
 }
 
 /**
@@ -371,7 +385,7 @@ export function wrap<T> (endpoint: Endpoint, rootMarkerID?: number): Remote<T> {
     }
   })
 
-  return createProxy<T>({ endpoint, pendingListeners, rootMarkerID })
+  return createProxy<T>({ endpoint, pendingListeners, context: createProxyContext(rootMarkerID) })
 }
 
 function throwIfProxyReleased (isReleased: boolean) {
@@ -441,6 +455,10 @@ function createProxy<T> (
       }
       if (prop === 'then') {
         if (path.length === 0) {
+          if (epWithPendingListeners.context.state && !epWithPendingListeners.context.state.markerID) {
+            const settledProxy = epWithPendingListeners.context.state.settlement.then(() => proxy)
+            return settledProxy.then.bind(settledProxy)
+          }
           return { then: () => proxy }
         }
         const r = requestResponseMessage(epWithPendingListeners, {
@@ -492,14 +510,26 @@ function createProxy<T> (
     construct (_target, rawArgumentList) {
       throwIfProxyReleased(isProxyReleased)
       const argumentList = processArguments(rawArgumentList, epWithPendingListeners)
-      return requestResponseMessage(
-        epWithPendingListeners,
-        {
-          type: MessageType.CONSTRUCT,
-          path: path.map((p) => p.toString()),
-          argumentList
-        }
-      ).then(v => fromWireValue(v, epWithPendingListeners.endpoint))
+
+      const constructorState = {
+        markerID: undefined,
+        settlement: requestResponseMessage(epWithPendingListeners,
+          {
+            type: MessageType.CONSTRUCT,
+            path: path.map((p) => p.toString()),
+            argumentList
+          }
+        ).then((value) => {
+          if (value.type === WireValueType.HANDLER && value.name === 'proxy') {
+            constructorState.markerID = value.value as undefined
+          } else {
+            unregisterProxy(newproxy)
+            fromWireValue(value, epWithPendingListeners.endpoint)
+          }
+        })
+      }
+      const newproxy = createProxy({ ...epWithPendingListeners, context: createProxyContext(epWithPendingListeners.context.rootMarkerID(), constructorState) })
+      return newproxy
     }
   })
   registerProxy(proxy, epWithPendingListeners)
@@ -540,14 +570,15 @@ function fromWireValue (value: WireValue, ep: Endpoint): any {
   }
 }
 
-function requestResponseMessage (
+async function requestResponseMessage (
   ep: EndpointWithPendingListeners,
   msg: Message
 ): Promise<WireValue> {
-  return new Promise((resolve) => {
+  await ep.context.state?.settlement
+  return await new Promise((resolve) => {
     const id = randomId()
     ep.pendingListeners.set(id, resolve)
-    ep.endpoint.postMessage({ id, ...msg, markerID: ep.rootMarkerID })
+    ep.endpoint.postMessage({ id, ...msg, markerID: ep.context.rootMarkerID() })
   })
 }
 
