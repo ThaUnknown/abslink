@@ -314,7 +314,7 @@ export function expose <T extends object> (
           returnValue = RawValue.apply(parent, argumentList)
           break
         case MessageType.CONSTRUCT:
-          returnValue = proxy(new RawValue(...argumentList))
+          returnValue = new RawValue(...argumentList)
           break
         case MessageType.RELEASE:
           returnValue = undefined
@@ -330,6 +330,8 @@ export function expose <T extends object> (
         return { value, [throwMarker]: 0 }
       })
       .then((returnValue) => {
+        // support async constructors
+        if (type === MessageType.CONSTRUCT) returnValue = proxy(returnValue)
         const [wireValue, transfer] = toWireValue(returnValue, ep)
         ep.postMessage({ ...wireValue, id, markerID: rootMarkerID }, transfer)
         if (type === MessageType.RELEASE) {
@@ -347,7 +349,7 @@ export function expose <T extends object> (
         }, ep)
         ep.postMessage({ ...wireValue, id, markerID: rootMarkerID }, transfer)
       })
-  } as any)
+  })
 
   return obj
 }
