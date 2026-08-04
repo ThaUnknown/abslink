@@ -9,7 +9,7 @@ export default expose({
 ```
 and
 ```ts
-import { wrap } from 'comlink'
+import { wrap } from 'abslink'
 import worker from './exposed.ts?worker'
 import type Maths from './exposed.ts'
 
