@@ -31,7 +31,7 @@ function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
       }
       listeners.delete(listener)
     },
-    postMessage (message: any, transfer?: Transferable[]) {
+    postMessage (message: any, transfer: Transferable[] = []) {
       messageable.postMessage(message, transfer)
     }
   }

@@ -25,7 +25,7 @@ function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoi
       channel.off(event, unwrapped)
       listeners.delete(listener)
     },
-    postMessage (message: any, transfer?: Transferable[]) {
+    postMessage (message: any, transfer: Transferable[] = []) {
       messageable.postMessage('message', message, transfer)
     }
   }

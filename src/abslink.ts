@@ -559,7 +559,7 @@ function fromWireValue (value: WireValue, ep: Endpoint): any {
 function requestResponseMessage (
   ep: EndpointWithPendingListeners,
   msg: Message,
-  transfer?: Transferable[]
+  transfer: Transferable[] = []
 ): Promise<WireValue> {
   return new Promise((resolve) => {
     const id = randomId()
