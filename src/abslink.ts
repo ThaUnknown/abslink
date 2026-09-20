@@ -338,7 +338,6 @@ export function expose <T extends object> (
           // detach and deactive after sending release response above.
           ep.off('message', callback)
           ;(obj as any)[finalizer]?.()
-          ep.close?.()
         }
       })
       .catch(_ => {
@@ -384,7 +383,6 @@ function throwIfProxyReleased (isReleased: boolean) {
 
 async function releaseEndpoint (epWithPendingListeners: EndpointWithPendingListeners) {
   await requestResponseMessage(epWithPendingListeners, { type: MessageType.RELEASE })
-  epWithPendingListeners.endpoint.close?.()
 }
 
 const proxyCounter = new WeakMap<EndpointWithPendingListeners, number>()

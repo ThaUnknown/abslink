@@ -3,9 +3,9 @@ import { ipcMain, ipcRenderer } from 'electron'
 
 import { wrap as _wrap, expose as _expose, type Endpoint, type Remote } from '../src/abslink.ts'
 
-import type { ElectronLike, Terminateable, W3CEvent } from '../src/types.ts'
+import type { ElectronLike, Startable, W3CEvent } from '../src/types.ts'
 
-interface Messageable extends Terminateable {
+interface Messageable extends Startable {
   postMessage: (channel: string, message: any, transfer?: Transferable[]) => void
 }
 
@@ -27,11 +27,6 @@ function createWrapper (channel: ElectronLike, messageable: Messageable): Endpoi
     },
     postMessage (message: any, transfer?: Transferable[]) {
       messageable.postMessage('message', message, transfer)
-    },
-    close () {
-      // @ts-expect-error w/e
-      if (channel !== globalThis) channel.close?.()
-      if (messageable !== globalThis) messageable.close?.()
     }
   }
 }

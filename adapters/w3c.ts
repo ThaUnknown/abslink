@@ -33,10 +33,6 @@ function createWrapper (channel: W3CLike, messageable: Messageable): Endpoint {
     },
     postMessage (message: any, transfer?: Transferable[]) {
       messageable.postMessage(message, transfer)
-    },
-    close () {
-      if (channel !== globalThis) channel.close?.()
-      if (messageable !== globalThis) messageable.close?.()
     }
   }
 }

@@ -6,12 +6,11 @@ export interface W3CMessageEvent<T = any> extends W3CEvent {
   data: T
 }
 
-export interface Terminateable {
-  close?: () => void
+export interface Startable {
   start?: () => void
 }
 
-export interface Messageable extends Terminateable {
+export interface Messageable extends Startable {
   postMessage: (message: any, ...args: any[]) => void
 }
 
@@ -31,7 +30,7 @@ export interface NodeLike<T = any> extends Messageable {
   off: (type: string, listener: (data: T) => void) => void
 }
 
-export interface ElectronLike<T = any> extends Terminateable {
+export interface ElectronLike<T = any> extends Startable {
   on: (type: string, listener: (e: any, data: T) => void) => void
   off: (type: string, listener: (e: any, data: T) => void) => void
   postMessage?: (channel: string, message: any, ...args: any[]) => void
