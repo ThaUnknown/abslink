@@ -331,7 +331,10 @@ export function expose <T extends object> (
       })
       .then((returnValue) => {
         // support async constructors
-        if (type === MessageType.CONSTRUCT) returnValue = proxy(returnValue)
+        // A thrown value must reach the caller as an error. Do not proxy it.
+        if (type === MessageType.CONSTRUCT && !(isObject(returnValue) && throwMarker in returnValue)) {
+          returnValue = proxy(returnValue)
+        }
         const [wireValue, transfer] = toWireValue(returnValue, ep)
         ep.postMessage({ ...wireValue, id, markerID: rootMarkerID }, transfer)
         if (type === MessageType.RELEASE) {
